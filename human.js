@@ -1,10 +1,8 @@
 
-
-var MAX_PROGRESS = 16;
-function human() {
+var Human = function() {
+    this.angle_to_mouse = 0;
     this.progress = 0;
-  	this.gun = undefined;
-    this.pos = {x: 25, y: 25, face: 'lf', angle: 0, moving: false};
+    this.pos = {x: 25, y: 25, face: 'lf', moving: false};
     this.head = {
       color: "#f7c19b",
       height: 12,
@@ -108,49 +106,12 @@ function human() {
       rb: {x: 16, y: 3, width: 3, height: 20},
     };
     
-		this.facing_forward = function() {
-    	return this.pos.face === 'lf' || this.pos.face === 'rf';
+    this.facing_forward = function() {
+      return this.pos.face === 'lf' || this.pos.face === 'rf';
     }
     
-    this.draw_gun = function(ctx){
-    	var gun = this.gun;
-      var x = this.pos.x + (this.torso_top.width/2);
-      var y = this.pos.y
-    
-      
-      var right_angle = Math.atan2(y - mousePosition.y, x - mousePosition.x) * 180 / Math.PI;
-      var direction = "left";
-
-      this.pos.angle = right_angle;
-      if(mousePosition.x > x) {
-        direction = "right";
-        right_angle += 180;
-      }
-      var gun_rects = gun.rects[direction];
-      var arm_rects = gun.arms[direction];
-
-      ctx.fillStyle = gun.color;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(right_angle * Math.PI / 180);
-      
-      // draw gun
-      for(var i = 0; i < gun_rects.length; i++) {
-      	var rect = gun_rects[i];
-      	ctx.fillRect(rect.x - gun.width, rect.y + gun.height, rect.w, rect.h);
-      }
-
-      // draw arms
-      ctx.fillStyle = "#f7c19b";
-      for(var i = 0; i < arm_rects.length; i++) {
-      	var rect = arm_rects[i];
-      	ctx.fillRect(rect.x - gun.width, rect.y + gun.height, rect.w, rect.h);
-      }
-      ctx.restore();
-    };
-    
     this.drawLimb = function(ctx, part) {
-    	var hu = this;
+      var hu = this;
       ctx.fillStyle = part.color;
 
       var x = part[this.pos.face].x;
@@ -182,22 +143,127 @@ function human() {
     };
     
     this.drawArms = function(cntxt) {
-    	if (!this.gun) {
+      if (!this.gun.gun) {
         this.drawLimb(cntxt, this.arm_right);
         this.drawLimb(cntxt, this.arm_left);
       }
-      else {
-         this.draw_gun(cntxt);
-      }
     };
+
+    this.new_shot = function() {
+      // Set the target position
+      var targetX = mousePosition.x;
+      var targetY = mousePosition.y;
+
+      // Get the direction in x and y (delta)
+      var directionX = targetX - this.pos.x;
+      var directionY = targetY - this.pos.y;
+
+      // Normalize the direction
+      var len = Math.sqrt(directionX * directionX + directionY * directionY);
+      directionX = directionX / len;
+      directionY = directionY / len;
+      var bullet = this.gun.gun.bullet;
+
+      this.gun.shots.push({
+        x: this.pos.x,
+        y: this.pos.y,
+        mx: targetX,
+        my: targetY,
+        ox: this.pos.x,
+        oy: this.pos.y,
+        dx: directionX,
+        dy: directionY,
+        bullet: bullet,
+        angle: this.angle_to_mouse
+      });
+    }
+
+    this.draw_gun = function(ctx){
+      var gun = this.gun.gun;
+      var x = this.pos.x + (this.torso_top.width/2);
+      var y = this.pos.y
     
-    this.draw = function(cntxt) {
-    	// shadow
+      var direction = "left";
+
+      var right_angle = this.angle_to_mouse;
+      if(mousePosition.x > x) {
+        direction = "right";
+        right_angle += 180;
+      }
+      var gun_rects = gun.rects[direction];
+      var arm_rects = gun.arms[direction];
+
+      ctx.fillStyle = gun.color;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(right_angle * Math.PI / 180);
+      
+      // draw gun
+      for(var i = 0; i < gun_rects.length; i++) {
+        var rect = gun_rects[i];
+        ctx.fillRect(rect.x - gun.width, rect.y + gun.height, rect.w, rect.h);
+      }
+
+      // draw arms
+      ctx.fillStyle = "#f7c19b";
+      for(var i = 0; i < arm_rects.length; i++) {
+        var rect = arm_rects[i];
+        ctx.fillRect(rect.x - gun.width, rect.y + gun.height, rect.w, rect.h);
+      }
+      ctx.restore();
+    };
+
+    this.update_shots = function(progress) {
+      if(this.gun.gun && mouseDown){
+        if(this.gun.delay <= 0) {
+          this.reset_gun_delay();
+          // add shot
+          this.new_shot();
+        }
+        mouseDown = false;
+      }
+      for (var i = this.gun.shots.length - 1; i >= 0; i--) {
+        this.gun.shots[i].x += (this.gun.shots[i].dx * this.gun.shots[i].bullet.speed);
+        this.gun.shots[i].y += (this.gun.shots[i].dy * this.gun.shots[i].bullet.speed);
+
+        if((this.gun.shots[i].x > canvas.width || this.gun.shots[i].x < 0) ||
+           (this.gun.shots[i].y > canvas.height || this.gun.shots[i].y < 0)) {
+          this.gun.shots.splice(i, 1);
+        }
+      }
+
+      if(this.gun.delay > 0)
+        this.gun.delay -= progress;
+    }
+
+    this.draw_shots = function(ctx) {
+      ctx.fillStyle = "#FFF";
+      for (var i = this.gun.shots.length - 1; i >= 0; i--) {
+        var shot = this.gun.shots[i];
+        var targetX = shot.mx;
+        var targetY = shot.my;
+
+        var direction = (targetX > shot.x ? "r" : "l")
+
+        var x = shot.x + (this.torso_top.width/2);
+        ctx.save();
+        ctx.translate(x, shot.y);
+        ctx.rotate(shot.angle * Math.PI / 180);
+        ctx.fillRect(0 - this.gun.gun.width + shot.bullet.start[direction].x, 
+                     0 + this.gun.gun.height + shot.bullet.start[direction].y, 
+                     shot.bullet.width, 
+                     shot.bullet.height);
+        ctx.restore();
+      }
+    }
+
+    this._draw = function(cntxt) {
+      // shadow
       cntxt.fillStyle = "rgba(0,0,0,.1)";
       cntxt.fillRect(this.pos.x - 3, this.pos.y + 50, 20, 10);
       
       if(!this.facing_forward())
-      	this.drawArms(cntxt);
+        this.drawArms(cntxt);
       // waist and legs
       this.drawLimb(cntxt, this.waist);
       this.drawLimb(cntxt, this.leg_top_left);
@@ -211,13 +277,21 @@ function human() {
       this.drawLimb(cntxt, this.head);    
       // arms
       if(this.facing_forward())
-      	this.drawArms(cntxt);
+        this.drawArms(cntxt);
+
+      this.draw_shots(cntxt);
 
       if(this.progress > MAX_PROGRESS) this.progress = 0;
     };
 
-    this.update = function(progress) {
-      checkKeys();
+    this._update = function(progress) {
       this.progress += progress;
+
+      this.update_shots(progress);
+
+      var x = this.pos.x + (this.torso_top.width/2);
+      var y = this.pos.y
+      
+      this.angle_to_mouse = Math.atan2(y - mousePosition.y, x - mousePosition.x) * 180 / Math.PI;
     };
-}
+};

@@ -18,10 +18,10 @@ function init() {
 
     ctx = canvas.getContext('2d');
 
-    player = new human();
+    player = new Player();
     player.pos.y += 80;
     player.pos.x += 25;
-    player.gun = guns.shotgun;
+    player.set_gun(guns.shotgun);
 
     requestAnimFrame(gameLoop);
 }
@@ -48,7 +48,10 @@ function draw() {
 
     ctx.font = '12px helvetica';
     ctx.fillStyle = "#000";
-    ctx.fillText("P1", player.pos.x, player.pos.y - 20);
+    ctx.fillText(player.display_name, player.pos.x, player.pos.y - 20);
+    ctx.fillText("Shots: " + player.gun.shots.length, 10, 20);
+    ctx.fillText("X: " + player.pos.x, 10, 34);
+    ctx.fillText("Y: " + player.pos.y, 10, 48);
 }
 
 function update(progress) {
@@ -100,10 +103,10 @@ document.onmousedown = function(ev) {
     mouseDown = true;
 }
 
-document.onmouseup = function(ev) {
-    mouseDown = false;
-    var i = keys.indexOf(ev.keyCode);
-}
+// document.onmouseup = function(ev) {
+//     mouseDown = false;
+//     var i = keys.indexOf(ev.keyCode);
+// }
 
 var keys = [];
 function checkKeys() {

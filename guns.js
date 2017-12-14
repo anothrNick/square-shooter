@@ -1,5 +1,18 @@
 var guns = {
   "shotgun": {
+    "clip": 8, // 8 rounds per clip
+    "reload": 6, // 6s reload time
+    "delay": .2, // 2s between shots
+    "bullet": { // bullet behaviour
+      "speed": 25, 
+      "width": 20, 
+      "height": 5, 
+      "color": "#FFF", 
+      "start": {
+        "l": {"x": -25,"y":0},
+        "r": {"x": -25,"y":-8}
+      }
+    },
     "color": "#000",
     "width": 38,
     "height": 2,
@@ -33,6 +46,19 @@ var guns = {
     }
   },
   "pistol": {
+    "clip": 8, // 8 rounds per clip
+    "reload": 6, // 6s reload time
+    "delay": .1, // 2s between shots
+    "bullet": { // bullet behaviour
+      "speed": 25, 
+      "width": 10, 
+      "height": 3, 
+      "color": "#FFF", 
+      "start": {
+        "l": {"x": -25,"y":0},
+        "r": {"x": -25,"y":-8}
+      }
+    },
     "color": "#000",
     "width": 30,
     "height": 2,
