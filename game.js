@@ -1,6 +1,9 @@
 var canvas;
 var ctx;
 var player;
+var enemies = [];
+var players = [];
+var collides = [];
 var frame = 0;
 var lastRender = 0;
 var mousePosition = {
@@ -23,6 +26,14 @@ function init() {
     player.pos.x += 25;
     player.set_gun(guns.shotgun);
 
+    players.push(player);
+
+    e1 = new Player("#000");
+    e1.pos.y += 100;
+    e1.pos.x += 300;
+
+    enemies.push(e1);
+
     requestAnimFrame(gameLoop);
 }
 
@@ -44,7 +55,17 @@ function gameLoop(timestamp) {
 }
 
 function draw() {
+    for (var i = enemies.length - 1; i >= 0; i--) {
+        enemies[i]._draw(ctx);
+    }
+
     player.draw(ctx);
+
+    for (var i = collides.length - 1; i >= 0; i--) {
+        var c = collides[i];
+        ctx.fillStyle = c.color + c.opacity + ")";
+        ctx.fillRect(c.x,c.y,c.w,c.w);
+    }
 
     ctx.font = '12px helvetica';
     ctx.fillStyle = "#000";
@@ -55,13 +76,78 @@ function draw() {
 }
 
 function update(progress) {
+
+    for (var i = enemies.length - 1; i >= 0; i--) {
+        enemies[i]._update(progress);
+    }
     player.update(progress);
+
+    updateCollides(progress);
+    checkShotCollision(progress);
 }
 
 function clear(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#88DC70";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function updateCollides(progress) {
+    for (var i = collides.length - 1; i >= 0; i--) {
+        if(collides[i].w > 12){
+            collides.splice(i,1);
+        }
+        else {
+            if(collides[i].progress > 16) {
+                collides[i].w += 1;
+                collides[i].x -= .5;
+                collides[i].y -= .5;
+                collides[i].opacity -= .1;
+                collides[i].progress = 0;
+            }
+            else {
+                collides[i].progress += progress;
+            }
+        }
+    }
+}
+
+function checkShotCollision() {
+    for (var i = players.length - 1; i >= 0; i--) {
+        var cp = players[i];
+        var shots = cp.gun.shots;
+        for (var j = shots.length - 1; j >= 0; j--) {
+            var shot = shots[j];
+            for (var k = enemies.length - 1; k >= 0; k--) {
+                var enemy = enemies[k];
+                if(isCollide(cp.get_shot_bounds(shot), 
+                             {x:enemy.pos.x, y:enemy.pos.y, height:enemy.torso_top.height+enemy.torso_bottom.height+enemy.waist.height, width:enemy.torso_top.width})) {
+                    collides.push({
+                        x: shot.x + (cp.torso_top.width/2),
+                        y: shot.y,
+                        w: 1,
+                        opacity: 1,
+                        color: "rgba(255,0,0,",
+                        progress: 0
+                    });
+                    players[i].gun.shots.splice(j, 1);
+                }
+            }
+        }
+    }
+}
+
+function isCollide(a, b) {
+    /*
+    expects both a and b to be objects with 
+    x, y, width and height properties
+    */
+    return !(
+        ((a.y + a.height) <= (b.y)) ||
+        (a.y >= (b.y + b.height)) ||
+        ((a.x + a.width) <= b.x) ||
+        (a.x >= (b.x + b.width))
+    );
 }
 
 window.requestAnimFrame = (function(){

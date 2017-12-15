@@ -5,7 +5,7 @@ var guns = {
     "delay": .2, // 2s between shots
     "bullet": { // bullet behaviour
       "speed": 25, 
-      "width": 20, 
+      "width": 5, 
       "height": 5, 
       "color": "#FFF", 
       "start": {

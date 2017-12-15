@@ -1,10 +1,13 @@
 
-var Human = function() {
+var Human = function(shirt, pant, skin) {
     this.angle_to_mouse = 0;
     this.progress = 0;
     this.pos = {x: 25, y: 25, face: 'lf', moving: false};
+    this.shirt_color = shirt || "#9a9a9a";
+    this.pant_color = pant || "#333";
+    this.skin_color = skin || ["#f7c19b", "#876127"][Math.floor(2*Math.random())];
     this.head = {
-      color: "#f7c19b",
+      color: this.skin_color,
       height: 12,
       width: 8,
       lf: {x: 2, y: -11, width: 8, height: 12},
@@ -13,7 +16,7 @@ var Human = function() {
       rb: {x: 4, y: -11, width: 8, height: 11},
     };
     this.torso_top = {
-      color: "#9a9a9a",
+      color: this.shirt_color,
       height: 15,
       width: 16,
       lf: {x: -1, y: 0, width: 16, height: 15},
@@ -22,7 +25,7 @@ var Human = function() {
       rb: {x: 0, y: 0, width: 16, height: 15},
     };
     this.torso_bottom = {
-      color: "#9a9a9a",
+      color: this.shirt_color,
       height: 5,
       width: 15,
       lf: {x: 0, y: 15, width: 15, height: 5},
@@ -31,7 +34,7 @@ var Human = function() {
       rb: {x: 0, y: 15, width: 15, height: 5},
     };
     this.waist = {
-      color: "#333",
+      color: this.pant_color,
       height: 10,
       width: 15,
       lf: {x: 0, y: 20, width: 15, height: 10},
@@ -40,7 +43,7 @@ var Human = function() {
       rb: {x: 0, y: 20, width: 15, height: 10},
     };
     this.leg_top_left = {
-      color: "#333",
+      color: this.pant_color,
       height: 30,
       width: 2,
       lf: {x: -1, y: 25, width: 2, height: 30},
@@ -52,7 +55,7 @@ var Human = function() {
       asc: true
     };
     this.leg_bottom_left = {
-      color: "#333",
+      color: this.pant_color,
       height: 22,
       width: 2,
       lf: {x: 1, y: 25, width: 2, height: 22},
@@ -64,7 +67,7 @@ var Human = function() {
       asc: true
     };
     this.leg_top_right = {
-      color: "#333",
+      color: this.pant_color,
       height: 30,
       width: 2,
       lf: {x: 10, y: 25, width: 2, height: 30},
@@ -76,7 +79,7 @@ var Human = function() {
       asc: true
     };
     this.leg_bottom_right = {
-      color: "#333",
+      color: this.pant_color,
       height: 22,
       width: 2,
       lf: {x: 12, y: 25, width: 2, height: 22},
@@ -88,7 +91,7 @@ var Human = function() {
       asc: true
     };
     this.arm_left = {
-      color: "#f7c19b",
+      color: this.skin_color,
       height: 20,
       width: 3,
       lf: {x: -3, y: 3, width: 2, height: 20},
@@ -97,7 +100,7 @@ var Human = function() {
       rb: {x: -2, y: 3, width: 2, height: 20},
     };
     this.arm_right = {
-      color: "#f7c19b",
+      color: this.skin_color,
       height: 20,
       width: 3,
       lf: {x: 13, y: 3, width: 3, height: 20},
@@ -140,7 +143,27 @@ var Human = function() {
                    this.pos.y + y, 
                    part[this.pos.face].width,
                    part[this.pos.face].height);
+    };    
+    this.gun = {
+      gun: undefined,
+      clip: 0,
+      reload: 0,
+      delay: 0,
+      shots: []
     };
+
+    this.set_gun = function(gun) {
+      if(gun) {
+        this.gun.gun = gun;
+        this.gun.clip = gun.clip;
+        this.gun.reload = (gun.reload * 1000); // to seconds
+        // this.reset_gun_delay();
+      }
+    }
+
+    this.reset_gun_delay = function() {
+      this.gun.delay = (this.gun.gun.delay * 1000); // to seconds
+    }
     
     this.drawArms = function(cntxt) {
       if (!this.gun.gun) {
@@ -205,7 +228,7 @@ var Human = function() {
       }
 
       // draw arms
-      ctx.fillStyle = "#f7c19b";
+      ctx.fillStyle = this.skin_color;
       for(var i = 0; i < arm_rects.length; i++) {
         var rect = arm_rects[i];
         ctx.fillRect(rect.x - gun.width, rect.y + gun.height, rect.w, rect.h);
@@ -238,6 +261,7 @@ var Human = function() {
 
     this.draw_shots = function(ctx) {
       ctx.fillStyle = "#FFF";
+      // ctx.strokeStyle = "#F00";
       for (var i = this.gun.shots.length - 1; i >= 0; i--) {
         var shot = this.gun.shots[i];
         var targetX = shot.mx;
@@ -246,21 +270,44 @@ var Human = function() {
         var direction = (targetX > shot.x ? "r" : "l")
 
         var x = shot.x + (this.torso_top.width/2);
-        ctx.save();
-        ctx.translate(x, shot.y);
-        ctx.rotate(shot.angle * Math.PI / 180);
-        ctx.fillRect(0 - this.gun.gun.width + shot.bullet.start[direction].x, 
-                     0 + this.gun.gun.height + shot.bullet.start[direction].y, 
+
+        // ctx.strokeRect( x,
+        //                 shot.y,
+        //                 shot.bullet.width, 
+        //                 shot.bullet.height);
+
+        // ctx.save();
+        // ctx.translate(x, shot.y);
+        // ctx.rotate(shot.angle * Math.PI / 180);
+        ctx.fillRect(x, 
+                     shot.y, 
                      shot.bullet.width, 
                      shot.bullet.height);
-        ctx.restore();
+        // ctx.restore();
       }
+    }
+
+    this.get_shot_bounds = function(shot) {
+      var targetX = shot.mx;
+      var targetY = shot.my;
+
+      var direction = (targetX > shot.x ? "r" : "l");
+      var x = shot.x + (this.torso_top.width/2);
+
+      return {
+        x: x,
+        y: shot.y,
+        height: shot.bullet.height,
+        width: shot.bullet.width
+      };
     }
 
     this._draw = function(cntxt) {
       // shadow
       cntxt.fillStyle = "rgba(0,0,0,.1)";
       cntxt.fillRect(this.pos.x - 3, this.pos.y + 50, 20, 10);
+
+      this.draw_shots(cntxt);
       
       if(!this.facing_forward())
         this.drawArms(cntxt);
@@ -279,8 +326,11 @@ var Human = function() {
       if(this.facing_forward())
         this.drawArms(cntxt);
 
-      this.draw_shots(cntxt);
-
+      // ctx.strokeStyle = "#F00";
+      // ctx.strokeRect(this.pos.x,
+      //                this.pos.y,
+      //                this.torso_top.width, 
+      //                this.torso_top.height+this.torso_bottom.height+this.waist.height);
       if(this.progress > MAX_PROGRESS) this.progress = 0;
     };
 
