@@ -1,6 +1,8 @@
 
 var Human = function(shirt, pant, skin) {
-    this.angle_to_mouse = 0;
+    this.mouseDown = false;
+    this.angle_to_target = 0;
+    this.target = {x: 0, y: 0}
     this.progress = 0;
     this.pos = {x: 25, y: 25, face: 'lf', moving: false};
     this.shirt_color = shirt || "#9a9a9a";
@@ -174,8 +176,8 @@ var Human = function(shirt, pant, skin) {
 
     this.new_shot = function() {
       // Set the target position
-      var targetX = mousePosition.x;
-      var targetY = mousePosition.y;
+      var targetX = this.target.x;
+      var targetY = this.target.y;
 
       // Get the direction in x and y (delta)
       var directionX = targetX - this.pos.x;
@@ -197,7 +199,7 @@ var Human = function(shirt, pant, skin) {
         dx: directionX,
         dy: directionY,
         bullet: bullet,
-        angle: this.angle_to_mouse
+        angle: this.angle_to_target
       });
     }
 
@@ -208,8 +210,8 @@ var Human = function(shirt, pant, skin) {
     
       var direction = "left";
 
-      var right_angle = this.angle_to_mouse;
-      if(mousePosition.x > x) {
+      var right_angle = this.angle_to_target;
+      if(this.target.x > x) {
         direction = "right";
         right_angle += 180;
       }
@@ -237,13 +239,13 @@ var Human = function(shirt, pant, skin) {
     };
 
     this.update_shots = function(progress) {
-      if(this.gun.gun && mouseDown){
+      if(this.gun.gun && this.mouseDown){
         if(this.gun.delay <= 0) {
           this.reset_gun_delay();
           // add shot
           this.new_shot();
         }
-        mouseDown = false;
+        this.mouseDown = false;
       }
       for (var i = this.gun.shots.length - 1; i >= 0; i--) {
         this.gun.shots[i].x += (this.gun.shots[i].dx * this.gun.shots[i].bullet.speed);
@@ -337,11 +339,11 @@ var Human = function(shirt, pant, skin) {
     this._update = function(progress) {
       this.progress += progress;
 
-      this.update_shots(progress);
-
       var x = this.pos.x + (this.torso_top.width/2);
-      var y = this.pos.y
+      var y = this.pos.y;
       
-      this.angle_to_mouse = Math.atan2(y - mousePosition.y, x - mousePosition.x) * 180 / Math.PI;
+      this.angle_to_target = Math.atan2(y - this.target.y, x - this.target.x) * 180 / Math.PI;
+
+      this.update_shots(progress);
     };
 };

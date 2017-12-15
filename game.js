@@ -1,6 +1,7 @@
 var canvas;
 var ctx;
 var player;
+var player2;
 var enemies = [];
 var players = [];
 var collides = [];
@@ -26,11 +27,19 @@ function init() {
     player.pos.x += 25;
     player.set_gun(guns.shotgun);
 
+    // player2 = new Player("#00A");
+    // player2.pos.y += 50;
+    // player2.pos.x += 65;
+    // player2.display_name = "P2";
+    // player2.set_gun(guns.shotgun);
+
+    // players.push(player2);
     players.push(player);
 
-    e1 = new Player("#000");
+    e1 = new Enemy("#000");
     e1.pos.y += 100;
-    e1.pos.x += 300;
+    e1.pos.x += 800;
+    e1.set_gun(guns.pistol);
 
     enemies.push(e1);
 
@@ -56,10 +65,20 @@ function gameLoop(timestamp) {
 
 function draw() {
     for (var i = enemies.length - 1; i >= 0; i--) {
-        enemies[i]._draw(ctx);
+        enemies[i].draw(ctx);
     }
 
-    player.draw(ctx);
+    for (var i = players.length - 1; i >= 0; i--) {
+        players[i].draw(ctx);
+        var dn = players[i].display_name;
+
+        ctx.font = '12px helvetica';
+        ctx.fillStyle = "#000";
+        ctx.fillText(dn, players[i].pos.x, players[i].pos.y - 20);
+        ctx.fillText(dn+" Shots: " + players[i].gun.shots.length, 10 + (100*i), 20);
+        ctx.fillText(dn+" X: " + players[i].pos.x, 10 + (100*i), 34);
+        ctx.fillText(dn+" Y: " + players[i].pos.y, 10 + (100*i), 48);
+    }
 
     for (var i = collides.length - 1; i >= 0; i--) {
         var c = collides[i];
@@ -67,20 +86,22 @@ function draw() {
         ctx.fillRect(c.x,c.y,c.w,c.w);
     }
 
-    ctx.font = '12px helvetica';
-    ctx.fillStyle = "#000";
-    ctx.fillText(player.display_name, player.pos.x, player.pos.y - 20);
-    ctx.fillText("Shots: " + player.gun.shots.length, 10, 20);
-    ctx.fillText("X: " + player.pos.x, 10, 34);
-    ctx.fillText("Y: " + player.pos.y, 10, 48);
+    
 }
 
 function update(progress) {
 
     for (var i = enemies.length - 1; i >= 0; i--) {
-        enemies[i]._update(progress);
+        enemies[i].target.x = players[0].pos.x;
+        enemies[i].target.y = players[0].pos.y;
+        enemies[i].mouseDown = true;
+        enemies[i].update(progress);
     }
-    player.update(progress);
+
+    for (var i = players.length - 1; i >= 0; i--) {
+        checkKeys(players[i]);
+        players[i].update(progress);
+    }
 
     updateCollides(progress);
     checkShotCollision(progress);
@@ -113,6 +134,7 @@ function updateCollides(progress) {
 }
 
 function checkShotCollision() {
+    // players to enemies
     for (var i = players.length - 1; i >= 0; i--) {
         var cp = players[i];
         var shots = cp.gun.shots;
@@ -131,6 +153,30 @@ function checkShotCollision() {
                         progress: 0
                     });
                     players[i].gun.shots.splice(j, 1);
+                }
+            }
+        }
+    }
+
+    // enemies to players
+    for (var i = enemies.length - 1; i >= 0; i--) {
+        var cp = enemies[i];
+        var shots = cp.gun.shots;
+        for (var j = shots.length - 1; j >= 0; j--) {
+            var shot = shots[j];
+            for (var k = players.length - 1; k >= 0; k--) {
+                var enemy = players[k];
+                if(isCollide(cp.get_shot_bounds(shot), 
+                             {x:enemy.pos.x, y:enemy.pos.y, height:enemy.torso_top.height+enemy.torso_bottom.height+enemy.waist.height, width:enemy.torso_top.width})) {
+                    collides.push({
+                        x: shot.x + (cp.torso_top.width/2),
+                        y: shot.y,
+                        w: 1,
+                        opacity: 1,
+                        color: "rgba(255,0,0,",
+                        progress: 0
+                    });
+                    enemies[i].gun.shots.splice(j, 1);
                 }
             }
         }
@@ -186,7 +232,9 @@ document.onkeyup = function(ev) {
 
 var mouseDown = false;
 document.onmousedown = function(ev) {
-    mouseDown = true;
+    for (var i = players.length - 1; i >= 0; i--) {
+        players[i].mouseDown = true;
+    }
 }
 
 // document.onmouseup = function(ev) {
@@ -195,14 +243,14 @@ document.onmousedown = function(ev) {
 // }
 
 var keys = [];
-function checkKeys() {
-    var lastX = player.pos.x;
-    var lastY = player.pos.y;
+function checkKeys(p) {
+    var lastX = p.pos.x;
+    var lastY = p.pos.y;
     
     var newX = 0;
     var newY = 0;
     var speed = 2;
-    var lastDirection = player.pos.face;
+    var lastDirection = p.pos.face;
     var newHoriz = lastDirection[0];
     var newVert = lastDirection[1];
     var moving = false;
@@ -243,15 +291,15 @@ function checkKeys() {
     // if(mouseDown == true)
     //     thisPlayer.manageAmmo();
     
-    player.pos.x += newX;
-    player.pos.y += newY;
-    player.pos.face = newHoriz + newVert;
-    player.pos.moving = moving;
+    p.pos.x += newX;
+    p.pos.y += newY;
+    p.pos.face = newHoriz + newVert;
+    p.pos.moving = moving;
     
-    if (player.pos.x + 40 > canvas.width || player.pos.x < 0)
-        player.pos.x -= newX;
-    if (player.pos.y + 100 > canvas.height || player.pos.y < 0)
-        player.pos.y -= newY;
+    if (p.pos.x + 40 > canvas.width || p.pos.x < 0)
+        p.pos.x -= newX;
+    if (p.pos.y + 100 > canvas.height || p.pos.y < 0)
+        p.pos.y -= newY;
     
     //scrollWrapper(x,y);
         

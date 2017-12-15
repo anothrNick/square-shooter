@@ -18,7 +18,9 @@ var Player = function() {
     };
 
     this.update = function(progress) {
-      checkKeys();
+
+      this.target.x = mousePosition.x;
+      this.target.y = mousePosition.y;
 
       this._update(progress);
     };
@@ -26,3 +28,27 @@ var Player = function() {
 
 Player.prototype = Human.prototype;
 Player.prototype.constructor = Player;
+
+var Enemy = function() {
+    Human.apply(this,arguments);
+
+    this.id = "some-unique-id";
+    this.display_name = "P1";
+
+    this.draw = function(cntxt) {
+      if(!this.facing_forward() && this.gun.gun)
+        this.draw_gun(cntxt);
+
+      this._draw(cntxt);
+
+      if(this.facing_forward() && this.gun.gun)
+        this.draw_gun(cntxt);
+    };
+
+    this.update = function(progress) {
+      this._update(progress);
+    };
+};
+
+Enemy.prototype = Human.prototype;
+Enemy.prototype.constructor = Enemy;

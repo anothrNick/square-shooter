@@ -48,11 +48,11 @@ var guns = {
   "pistol": {
     "clip": 8, // 8 rounds per clip
     "reload": 6, // 6s reload time
-    "delay": .1, // 2s between shots
+    "delay": 10, // 2s between shots
     "bullet": { // bullet behaviour
       "speed": 25, 
-      "width": 10, 
-      "height": 3, 
+      "width": 5, 
+      "height": 5, 
       "color": "#FFF", 
       "start": {
         "l": {"x": -25,"y":0},
